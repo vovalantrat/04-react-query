@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; 
 import { useQuery } from "@tanstack/react-query";
-import { Toaster, toast } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast"; 
 
 import SearchBar from "../SearchBar/SearchBar";
 import MovieGrid from "../MovieGrid/MovieGrid";
@@ -11,7 +12,6 @@ import MovieModal from "../MovieModal/MovieModal";
 import { fetchMovies } from "../../services/movieService";
 import type { Movie } from "../../types/movie";
 
-// ReactPaginate (лекционный вариант)
 import ReactPaginateModule from "react-paginate";
 import type { ReactPaginateProps } from "react-paginate";
 import type { ComponentType } from "react";
@@ -33,20 +33,17 @@ interface FetchMoviesResponse {
 }
 
 export default function App() {
-  const [query, setQuery] = useState(""); // ✅ важно: пусто по умолчанию
+  const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  const { data, isLoading, isError } = useQuery<FetchMoviesResponse>({
-    queryKey: ["movies", query, page],
-    queryFn: () => fetchMovies(query, page),
-
-    // React Query v5
-    placeholderData: (prev) => prev,
-
-    // ❗ запрос НЕ выполняется пока нет query
-    enabled: query.trim() !== "",
-  });
+  const { data, isLoading, isError, isSuccess } =
+    useQuery<FetchMoviesResponse>({
+      queryKey: ["movies", query, page],
+      queryFn: () => fetchMovies(query, page),
+      enabled: query.trim() !== "",
+      placeholderData: (prev) => prev,
+    });
 
   const movies = data?.results ?? [];
   const totalPages = data?.total_pages ?? 0;
@@ -54,11 +51,13 @@ export default function App() {
   const handleSearch = (newQuery: string) => {
     setQuery(newQuery);
     setPage(1);
-
-    if (!newQuery.trim()) {
-      toast.error("Enter search query");
-    }
   };
+
+  useEffect(() => {
+    if (isSuccess && movies.length === 0) {
+      toast.error("No movies found for your request.");
+    }
+  }, [isSuccess, movies]);
 
   return (
     <>
@@ -76,13 +75,13 @@ export default function App() {
               marginPagesDisplayed={1}
               onPageChange={({ selected }) => setPage(selected + 1)}
               forcePage={page - 1}
-              containerClassName={css.pagination}
-              activeClassName={css.active}
+              containerClassName={css.pagination}   
+              activeClassName={css.active}        
               nextLabel="→"
               previousLabel="←"
             />
           )}
-          
+
           <MovieGrid movies={movies} onSelect={setSelectedMovie} />
         </>
       )}
